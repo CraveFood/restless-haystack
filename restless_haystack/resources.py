@@ -14,11 +14,26 @@ RESULTS_PER_PAGE = getattr(settings, 'HAYSTACK_SEARCH_RESULTS_PER_PAGE', 20)
 
 
 class HaystackResource(DjangoResource):
+    """
+    A ``DjangoResource`` subclass specialized in Haystack searches.
+    The ``form_class``, ``load_all`` and ``searchqueryset`` properties work
+    the same as their Haystack view counterparts.
+
+    The ``prepare`` function is applied to the search results.
+    """
     form_class = SearchForm
     searchqueryset = None
     load_all = True
 
     def list(self):
+        """
+        Returns the results of a Haystack search, whose query is given by the
+        ``q`` parameter (and, optionally, ``page``).
+
+        :returns: A dictionary containing the resulting page, the original
+         query and a collection of suggestions, if applicable
+        :rtype: dict
+        """
         results_per_page = self.request.GET.get('per_page') or RESULTS_PER_PAGE
 
         form = self.form_class(self.request.GET,
@@ -45,6 +60,24 @@ class HaystackResource(DjangoResource):
         return context
 
     def serialize_list(self, data):
+        """
+        Serializes the search results returned by ``list``. The output contains
+        the following fields:
+
+        * ``objects``: a list of prepared results (same as ``Resource``)
+        * ``page``: number of the returned page
+        * ``start_index``: initial (1-based) index for the returned page
+        * ``end_index``: final (1-based) index for the returned page
+        * ``num_pages``: total number of pages
+        * ``query``: the provided query
+        * ``suggestion``: a suggestion, if applicable
+
+        :param data: The search data to serialize
+        :type data: dict
+
+        :returns: The serialized body
+        :rtype: string
+        """
         if data is None:
             return ''
         final_data = {
@@ -61,6 +94,12 @@ class HaystackResource(DjangoResource):
 
 def haystack_resource_factory(searchqueryset=None, form_class=SearchForm,
                               load_all=True):
+    """
+    A factory for creating ``HaystackResource`` subclasses with the given
+    properties.
+
+    :return: A ``HaystackResource`` subclass
+    """
     class Resource(HaystackResource):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
