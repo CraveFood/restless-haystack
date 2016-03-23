@@ -3,17 +3,14 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from django.conf import settings
-from django.core.paginator import InvalidPage, Paginator
+from django.template import RequestContext
 
 from haystack.forms import SearchForm
+from haystack.views import SearchView
 from restless.dj import DjangoResource
-from restless.exceptions import BadRequest, NotFound
-
-RESULTS_PER_PAGE = getattr(settings, 'HAYSTACK_SEARCH_RESULTS_PER_PAGE', 20)
 
 
-class HaystackResource(DjangoResource):
+class HaystackResource(SearchView, DjangoResource):
     """
     A ``DjangoResource`` subclass specialized in Haystack searches.
     The ``form_class``, ``load_all`` and ``searchqueryset`` properties work
@@ -21,43 +18,19 @@ class HaystackResource(DjangoResource):
 
     The ``prepare`` function is applied to the search results.
     """
-    form_class = SearchForm
-    searchqueryset = None
-    load_all = True
+
+    def __init__(self, template=None, load_all=True,
+                 form_class=None, searchqueryset=None,
+                 context_class=RequestContext, results_per_page=None):
+
+        if form_class is None:
+            form_class = SearchForm
+
+        super().__init__(template, load_all, form_class, searchqueryset,
+                         context_class, results_per_page)
 
     def list(self):
-        """
-        Returns the results of a Haystack search, whose query is given by the
-        ``q`` parameter (and, optionally, ``page``).
-
-        :returns: A dictionary containing the resulting page, the original
-         query and a collection of suggestions, if applicable
-        :rtype: dict
-        """
-        results_per_page = self.request.GET.get('per_page') or RESULTS_PER_PAGE
-
-        form = self.form_class(self.request.GET,
-                               searchqueryset=self.searchqueryset,
-                               load_all=self.load_all)
-        if not form.is_valid():
-            raise BadRequest(form.errors)
-        query = form.cleaned_data['q']
-        results = form.search()
-
-        paginator = Paginator(results, results_per_page)
-        try:
-            page = paginator.page(int(self.request.GET.get('page', 1)))
-        except InvalidPage:
-            raise NotFound('Invalid page number')
-
-        context = {
-            'page': page,
-            'query': query,
-            'suggestion': None,
-        }
-        if results.query.backend.include_spelling:
-            context['suggestion'] = form.get_suggestion()
-        return context
+        return self(self.request)
 
     def serialize_list(self, data):
         """
@@ -90,6 +63,28 @@ class HaystackResource(DjangoResource):
             'suggestion': data['suggestion'],
         }
         return self.serializer.serialize(final_data)
+
+    def create_response(self):
+        """
+        Generates the actual HttpResponse to send back to the user.
+        """
+        (paginator, page) = self.build_page()
+
+        context = {
+            'query': self.query,
+            'form': self.form,
+            'page': page,
+            'paginator': paginator,
+            'suggestion': None,
+        }
+
+        if (self.results and hasattr(self.results, 'query') and
+                self.results.query.backend.include_spelling):
+
+            context['suggestion'] = self.form.get_suggestion()
+
+        context.update(self.extra_context())
+        return context
 
 
 def haystack_resource_factory(searchqueryset=None, form_class=SearchForm,
