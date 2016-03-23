@@ -19,16 +19,6 @@ class HaystackResource(SearchView, DjangoResource):
     The ``prepare`` function is applied to the search results.
     """
 
-    def __init__(self, template=None, load_all=True,
-                 form_class=None, searchqueryset=None,
-                 context_class=RequestContext, results_per_page=None):
-
-        if form_class is None:
-            form_class = SearchForm
-
-        super().__init__(template, load_all, form_class, searchqueryset,
-                         context_class, results_per_page)
-
     def list(self):
         return self(self.request)
 
