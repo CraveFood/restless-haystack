@@ -2,21 +2,19 @@
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-
-from django.template import RequestContext
+import warnings
 
 from haystack.forms import SearchForm
 from haystack.views import SearchView
 from restless.dj import DjangoResource
 
 
-class HaystackResource(SearchView, DjangoResource):
+class SearchViewResource(SearchView, DjangoResource):
     """
-    A ``DjangoResource`` subclass specialized in Haystack searches.
+    A RESTful resource which behaves like Haystack's ``SearchView``, including
+     the use of ``SearchForm`` (and subclasses) for validation.
     The ``form_class``, ``load_all`` and ``searchqueryset`` properties work
-    the same as their Haystack view counterparts.
-
-    The ``prepare`` function is applied to the search results.
+    the same as their ``SearchView`` counterparts.
     """
 
     def list(self):
@@ -77,18 +75,39 @@ class HaystackResource(SearchView, DjangoResource):
         return context
 
 
-def haystack_resource_factory(searchqueryset=None, form_class=SearchForm,
-                              load_all=True):
+def searchview_resource_factory(searchqueryset=None, form_class=SearchForm,
+                                load_all=True):
     """
-    A factory for creating ``HaystackResource`` subclasses with the given
+    A factory for creating ``SearchViewResource`` subclasses with the given
     properties.
 
-    :return: A ``HaystackResource`` subclass
+    :return: A ``SearchViewResource`` subclass
     """
-    class Resource(HaystackResource):
+    class Resource(SearchViewResource):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.searchqueryset = searchqueryset
             self.form_class = form_class
             self.load_all = load_all
     return Resource
+
+# set for removal
+
+DEPRECATION_MESSAGE = '`{}` is deprecated; `{}` replaces it.' + \
+                      'The old name is set for removal on version 0.3'
+
+
+class HaystackResource(SearchViewResource):
+    def __init__(self, *args, **kwargs):
+        warnings.warn(DEPRECATION_MESSAGE.format(
+            'HaystackResource', 'SearchViewResource'),
+            DeprecationWarning)
+        super().__init__(*args, **kwargs)
+
+
+def haystack_resource_factory(searchqueryset=None, form_class=SearchForm,
+                              load_all=True):
+    warnings.warn(DEPRECATION_MESSAGE.format(
+        'haystack_resource_factory', 'searchview_resource_factory'),
+        DeprecationWarning)
+    return searchview_resource_factory(searchqueryset, form_class, load_all)
