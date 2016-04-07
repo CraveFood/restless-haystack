@@ -12,10 +12,10 @@ from restless.dj import DjangoResource
 from restless.exceptions import NotFound
 
 
-class SearchResource(SearchView, DjangoResource):
+class SearchableResource(SearchView, DjangoResource):
     """
-    A RESTful resource which behaves like Haystack's ``SearchView``, including
-     the use of ``SearchForm`` (and subclasses) for validation.
+    A RESTful resource which applies Haystack's ``SearchView`` when listed,
+     including the use of ``SearchForm`` (and subclasses) for validation.
     The ``form_class``, ``load_all`` and ``searchqueryset`` properties work
     the same as their ``SearchView`` counterparts.
     """
@@ -75,7 +75,7 @@ class SearchResource(SearchView, DjangoResource):
         return context
 
 
-class SimpleSearchResource(DjangoResource):
+class SimpleSearchableResource(DjangoResource):
     searchqueryset = SearchQuerySet()
     filters = []
     results_per_page = RESULTS_PER_PAGE
@@ -142,7 +142,7 @@ class SimpleSearchResource(DjangoResource):
         return self.serializer.serialize(final_data)
 
 
-class AutocompleteSearchResource(SimpleSearchResource):
+class AutocompleteSearchableResource(SimpleSearchableResource):
     autocomplete_field = 'content'
 
     def filter_query(self):
@@ -151,15 +151,15 @@ class AutocompleteSearchResource(SimpleSearchResource):
             self.searchqueryset = self.searchqueryset.autocomplete(**params)
 
 
-def search_resource_factory(searchqueryset=None, form_class=SearchForm,
-                            load_all=True):
+def searchable_resource_factory(searchqueryset=None, form_class=SearchForm,
+                                load_all=True):
     """
-    A factory for creating ``SearchResource`` subclasses with the given
+    A factory for creating ``SearchableResource`` subclasses with the given
     properties.
 
-    :return: A ``SearchResource`` subclass
+    :return: A ``SearchableResource`` subclass
     """
-    class Resource(SearchResource):
+    class Resource(SearchableResource):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.searchqueryset = searchqueryset
@@ -173,10 +173,10 @@ DEPRECATION_MESSAGE = '`{}` is deprecated; `{}` replaces it.' + \
                       'The old name is set for removal on version 0.3'
 
 
-class HaystackResource(SearchResource):
+class HaystackResource(SearchableResource):
     def __init__(self, *args, **kwargs):
         warnings.warn(DEPRECATION_MESSAGE.format(
-            'HaystackResource', 'SearchResource'),
+            'HaystackResource', 'SearchableResource'),
             DeprecationWarning)
         super().__init__(*args, **kwargs)
 
@@ -184,6 +184,6 @@ class HaystackResource(SearchResource):
 def haystack_resource_factory(searchqueryset=None, form_class=SearchForm,
                               load_all=True):
     warnings.warn(DEPRECATION_MESSAGE.format(
-        'haystack_resource_factory', 'search_resource_factory'),
+        'haystack_resource_factory', 'searchable_resource_factory'),
         DeprecationWarning)
-    return search_resource_factory(searchqueryset, form_class, load_all)
+    return searchable_resource_factory(searchqueryset, form_class, load_all)
