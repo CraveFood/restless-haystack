@@ -85,14 +85,15 @@ class SimpleSearchResource(DjangoResource):
         filters = {attr: self.request.GET[attr] for attr in self.filters
                    if attr in self.request.GET}
         self.searchqueryset = self.searchqueryset.filter(**filters)
-
-        if self.request.GET.get('q'):
-            self.searchqueryset = self.searchqueryset.filter(
-                content=self.request.GET.get('q'))
-
+        self.filter_query()
         if self.load_all:
             self.searchqueryset = self.searchqueryset.load_all()
         return self.get_page()
+
+    def filter_query(self):
+        if self.request.GET.get('q'):
+            self.searchqueryset = self.searchqueryset.filter(
+                content=self.request.GET.get('q'))
 
     def get_page(self):
         try:
@@ -139,6 +140,15 @@ class SimpleSearchResource(DjangoResource):
             'query': self.request.GET.get('q'),
         }
         return self.serializer.serialize(final_data)
+
+
+class AutocompleteSearchResource(SimpleSearchResource):
+    autocomplete_field = 'content'
+
+    def filter_query(self):
+        if self.request.GET.get('q'):
+            params = {self.autocomplete_field: self.request.GET.get('q')}
+            self.searchqueryset = self.searchqueryset.autocomplete(**params)
 
 
 def search_resource_factory(searchqueryset=None, form_class=SearchForm,
