@@ -80,6 +80,7 @@ class SimpleSearchableResource(DjangoResource):
     search_filters = []
     results_per_page = RESULTS_PER_PAGE
     load_all = False
+    prepare_indexes = False
 
     def list(self):
         filters = {attr: self.request.GET[attr] for attr in self.search_filters
@@ -131,8 +132,12 @@ class SimpleSearchableResource(DjangoResource):
         if data is None:
             return ''
 
+        if self.prepare_indexes:
+            objects = [self.prepare(res) for res in data.object_list]
+        else:
+            objects = [self.prepare(res.object) for res in data.object_list]
         final_data = {
-            'objects': [self.prepare(res.object) for res in data.object_list],
+            'objects': objects,
             'page': data.number,
             'start_index': data.start_index(),
             'end_index': data.end_index(),
