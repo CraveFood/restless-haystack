@@ -77,12 +77,12 @@ class SearchableResource(SearchView, DjangoResource):
 
 class SimpleSearchableResource(DjangoResource):
     searchqueryset = SearchQuerySet()
-    filters = []
+    search_filters = []
     results_per_page = RESULTS_PER_PAGE
     load_all = False
 
     def list(self):
-        filters = {attr: self.request.GET[attr] for attr in self.filters
+        filters = {attr: self.request.GET[attr] for attr in self.search_filters
                    if attr in self.request.GET}
         self.searchqueryset = self.searchqueryset.filter(**filters)
         self.filter_query()
@@ -132,7 +132,7 @@ class SimpleSearchableResource(DjangoResource):
             return ''
 
         final_data = {
-            'objects': [self.prepare(obj) for obj in data.object_list],
+            'objects': [self.prepare(res.object) for res in data.object_list],
             'page': data.number,
             'start_index': data.start_index(),
             'end_index': data.end_index(),
