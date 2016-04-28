@@ -76,11 +76,15 @@ class SearchableResource(SearchView, DjangoResource):
 
 
 class SimpleSearchableResource(DjangoResource):
-    searchqueryset = SearchQuerySet()
     search_filters = []
     results_per_page = RESULTS_PER_PAGE
     load_all = False
     prepare_indexes = False
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not getattr(self, 'searchqueryset', False):
+            self.searchqueryset = SearchQuerySet()
 
     def list(self):
         filters = {attr: self.request.GET[attr] for attr in self.search_filters
