@@ -77,22 +77,34 @@ class SearchableResource(SearchView, DjangoResource):
 
 class PrepareIndexDeprecationMetaClass(type):
     def __new__(meta, name, bases, dct):
+        # Remove prepare_indexes from class attributes replace
+        #   it by a property (getter and setter)
         prepare_indexes = dct.pop('prepare_indexes', None)
         dct['prepare_indexes'] = meta.prepare_indexes
 
+        # create the class
         cls = type.__new__(meta, name, bases, dct)
+
+        # if prepare_indexes was initialy set and use_model_instances
+        #   was unset use the given prepare_indexes value
         if prepare_indexes and not getattr(meta, 'use_model_instances', None):
             cls.prepare_indexes = prepare_indexes
         return cls
 
     @property
     def prepare_indexes(meta):
-        # TODO: raise deprecation warning
+        warnings.warn(DEPRECATION_MESSAGE.format(
+            'prepare_indexes', 'use_model_instances'), DeprecationWarning)
+        # since prepare_indexes and use_model_instances have opposite
+        #   meanings revert it before returning
         return not meta.use_model_instances
 
     @prepare_indexes.setter
     def prepare_indexes(meta, value):
-        # TODO: raise deprecation warning
+        warnings.warn(DEPRECATION_MESSAGE.format(
+            'prepare_indexes', 'use_model_instances'), DeprecationWarning)
+        # since prepare_indexes and use_model_instances have opposite
+        #   meanings revert it before storing
         meta.use_model_instances = not value
 
 
