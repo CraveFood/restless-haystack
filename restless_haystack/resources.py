@@ -75,11 +75,33 @@ class SearchableResource(SearchView, DjangoResource):
         return context
 
 
-class SimpleSearchableResource(DjangoResource):
+class PrepareIndexDeprecationMetaClass(type):
+    def __new__(meta, name, bases, dct):
+        prepare_indexes = dct.pop('prepare_indexes', None)
+        dct['prepare_indexes'] = meta.prepare_indexes
+
+        cls = type.__new__(meta, name, bases, dct)
+        if prepare_indexes and not getattr(meta, 'use_model_instances', None):
+            cls.prepare_indexes = prepare_indexes
+        return cls
+
+    @property
+    def prepare_indexes(meta):
+        # TODO: raise deprecation warning
+        return not meta.use_model_instances
+
+    @prepare_indexes.setter
+    def prepare_indexes(meta, value):
+        # TODO: raise deprecation warning
+        meta.use_model_instances = not value
+
+
+class SimpleSearchableResource(DjangoResource,
+                               metaclass=PrepareIndexDeprecationMetaClass):
     search_filters = []
     results_per_page = RESULTS_PER_PAGE
     load_all = False
-    prepare_indexes = False
+    use_model_instances = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -93,21 +115,21 @@ class SimpleSearchableResource(DjangoResource):
         self.filter_query()
         if self.load_all:
             self.searchqueryset = self.searchqueryset.load_all()
-        return self.get_page()
+        return self.searchqueryset
 
     def filter_query(self):
         if self.request.GET.get('q'):
             self.searchqueryset = self.searchqueryset.filter(
                 content=self.request.GET.get('q'))
 
-    def get_page(self):
+    def get_page(self, data):
         try:
             page_no = int(self.request.GET.get('page', 1))
         except (TypeError, ValueError):
             raise NotFound('Invalid page number.')
         if page_no < 1:
             raise NotFound('Page number should be 1 or greater.')
-        paginator = Paginator(self.searchqueryset, self.results_per_page)
+        paginator = Paginator(data, self.results_per_page)
 
         try:
             page = paginator.page(page_no)
@@ -116,39 +138,47 @@ class SimpleSearchableResource(DjangoResource):
         return page
 
     def serialize_list(self, data):
-        """
-        Serializes the search results returned by ``get_page``. The output
-         contains the following fields:
+        """Serializes the search results."""
 
-        * ``objects``: a list of prepared results (same as ``Resource``)
-        * ``page``: number of the returned page
-        * ``start_index``: initial (1-based) index for the returned page
-        * ``end_index``: final (1-based) index for the returned page
-        * ``num_pages``: total number of pages
-        * ``query``: the provided query
+        if self.results_per_page:
+            self.page = self.get_page(data)
+            data = self.page.object_list
 
-        :param data: The resulting search page
-        :type data: Page
+        if self.use_model_instances:
+            data = (res.object for res in data)
 
-        :returns: The serialized body
-        :rtype: string
-        """
-        if data is None:
-            return ''
+        return super().serialize_list(data)
 
-        if self.prepare_indexes:
-            objects = [self.prepare(res) for res in data.object_list]
-        else:
-            objects = [self.prepare(res.object) for res in data.object_list]
-        final_data = {
-            'objects': objects,
-            'page': data.number,
-            'start_index': data.start_index(),
-            'end_index': data.end_index(),
-            'num_pages': data.paginator.num_pages,
+    def wrap_list_response(self, data):
+        """Adds pagination and query information to search results."""
+
+        response_dict = super().wrap_list_response(data)
+
+        if hasattr(self, 'page'):
+            if self.page.has_next():
+                next_page = self.page.next_page_number()
+            else:
+                next_page = None
+
+            if self.page.has_previous():
+                previous_page = self.page.previous_page_number()
+            else:
+                previous_page = None
+
+            response_dict['pagination'] = {
+                'num_pages': self.page.paginator.num_pages,
+                'count': self.page.paginator.count,
+                'page': self.page.number,
+                'start_index': self.page.start_index(),
+                'end_index': self.page.end_index(),
+                'next_page': next_page,
+                'previous_page': previous_page,
+            }
+
+        response_dict['search'] = {
             'query': self.request.GET.get('q'),
         }
-        return self.serializer.serialize(final_data)
+        return response_dict
 
 
 class AutocompleteSearchableResource(SimpleSearchableResource):
