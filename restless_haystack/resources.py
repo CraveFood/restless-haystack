@@ -114,6 +114,7 @@ class SimpleSearchableResource(DjangoResource,
     results_per_page = RESULTS_PER_PAGE
     load_all = False
     use_model_instances = False
+    page_attribute_name = 'page'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -136,7 +137,7 @@ class SimpleSearchableResource(DjangoResource,
 
     def get_page(self, data):
         try:
-            page_no = int(self.request.GET.get('page', 1))
+            page_no = int(self.request.GET.get(self.page_attribute_name, 1))
         except (TypeError, ValueError):
             raise NotFound('Invalid page number.')
         if page_no < 1:
