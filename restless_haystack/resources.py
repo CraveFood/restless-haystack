@@ -142,6 +142,11 @@ class SimpleSearchableResource(DjangoResource,
             raise NotFound('Invalid page number.')
         if page_no < 1:
             raise NotFound('Page number should be 1 or greater.')
+        # Explicitly evaluate data before sending it to Paginator, otherwise
+        # (at least in the case of RelatedSearchQuerySet) the total count
+        # goes completely wrong
+        # see: https://github.com/django-haystack/django-haystack/issues/362
+        str(data)
         paginator = Paginator(data, self.results_per_page)
 
         try:
