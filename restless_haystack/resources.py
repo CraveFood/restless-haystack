@@ -146,7 +146,7 @@ class SimpleSearchableResource(DjangoResource,
         # (at least in the case of RelatedSearchQuerySet) the total count
         # goes completely wrong
         # see: https://github.com/django-haystack/django-haystack/issues/362
-        str(data)
+        data[:self.results_per_page]
         paginator = Paginator(data, self.results_per_page)
 
         try:
