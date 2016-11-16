@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='restless-haystack',
-    version='0.1.0',
+    version=open('VERSION', 'r').read(),
     packages=['restless_haystack'],
     install_requires=['Django', 'django-haystack', 'restless'],
     url='https://github.com/CraveFood/restless-haystack',

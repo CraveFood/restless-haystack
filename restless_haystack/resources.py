@@ -15,7 +15,8 @@ from restless.exceptions import NotFound
 class SearchableResource(SearchView, DjangoResource):
     """
     A RESTful resource which applies Haystack's ``SearchView`` when listed,
-     including the use of ``SearchForm`` (and subclasses) for validation.
+    including the use of ``SearchForm`` and subclasses for validation.
+
     The ``form_class``, ``load_all`` and ``searchqueryset`` properties work
     the same as their ``SearchView`` counterparts.
     """
@@ -110,9 +111,15 @@ class PrepareIndexDeprecationMetaClass(type):
 
 class SimpleSearchableResource(DjangoResource,
                                metaclass=PrepareIndexDeprecationMetaClass):
+    """
+    A RESTful resource which takes a ``SearchQuerySet`` from Haystack, filters
+    it and returns a paginated list.
+    """
+
     search_filters = []
     results_per_page = RESULTS_PER_PAGE
     load_all = False
+    #: Whether to use the actual model instead of its ``SearchIndex``.
     use_model_instances = False
     page_attribute_name = 'page'
 

@@ -20,11 +20,24 @@ API Reference
 Release Notes
 =============
 
+* v0.2.0 (2016-11-16)
+
+  * Renamed ``HaystackResource`` to ``SearchableResource``. The former is still
+    available, but deprecated, and will be removed in the upcoming 0.3.0
+    version.
+
+    * Same applies to ``haystack_resource_factory`` and
+      ``searchable_resource_factory``, respectively.
+  * Added ``SimpleSearchableResource``, which directly emulates the basic
+    behaviour of Haystack's ``SearchView``.
+  * Added ``AutocompleteSearchableResource``, which extends
+    ``SimpleSearchableResource`` with autocomplete support.
+
 * v0.1.0 (2016-03-10)
 
   * Initial release
-  * Added HaystackResource
-  * Added haystack_resource_factory
+  * Added ``HaystackResource``
+  * Added ``haystack_resource_factory``
 
 Indices and tables
 ==================

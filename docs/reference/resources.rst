@@ -8,5 +8,6 @@ restless_haystack.resources
 ---------------------------
 
 .. automodule:: restless_haystack.resources
-   :members: HaystackResource, haystack_resource_factory
+   :members: SearchableResource, searchable_resource_factory,
+     SimpleSearchableResource, AutocompleteSearchableResource
    :undoc-members:
