@@ -53,6 +53,7 @@ class SearchableResource(SearchView, DjangoResource):
             'num_pages': data['page'].paginator.num_pages,
             'query': data['query'],
             'suggestion': data['suggestion'],
+            'per_page': self.results_per_page,
         }
         return self.serializer.serialize(final_data)
 
@@ -198,6 +199,7 @@ class SimpleSearchableResource(DjangoResource,
                 'end_index': self.page.end_index(),
                 'next_page': next_page,
                 'previous_page': previous_page,
+                'per_page': self.results_per_page,
             }
 
         response_dict['search'] = {
