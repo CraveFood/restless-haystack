@@ -139,7 +139,9 @@ class SimpleSearchableResource(DjangoResource,
         return self.searchqueryset
 
     def filter_query(self):
-        if self.request.GET.get('q'):
+        if (self.request.GET.get('q') and
+                not self.request.GET.get('q').isspace()):
+
             self.searchqueryset = self.searchqueryset.filter(
                 content=self.request.GET.get('q'))
 
@@ -212,7 +214,9 @@ class AutocompleteSearchableResource(SimpleSearchableResource):
     autocomplete_field = 'content'
 
     def filter_query(self):
-        if self.request.GET.get('q'):
+        if (self.request.GET.get('q') and
+                not self.request.GET.get('q').isspace()):
+
             params = {self.autocomplete_field: self.request.GET.get('q')}
             self.searchqueryset = self.searchqueryset.autocomplete(**params)
 
