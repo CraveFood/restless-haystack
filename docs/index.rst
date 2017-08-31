@@ -20,11 +20,19 @@ API Reference
 Release Notes
 =============
 
+* v0.3.1 (2017-08-31)
+
+  * Fixed an error where search for a blank space raises a ``TypeError``. (#3)
+
+* v0.3.0 (2017-08-04)
+
+  * Added the ``per_page`` attribute to ``SearchableResource`` and
+    ``SimpleSearchableResource``.
+
 * v0.2.0 (2016-11-16)
 
   * Renamed ``HaystackResource`` to ``SearchableResource``. The former is still
-    available, but deprecated, and will be removed in the upcoming 0.3.0
-    version.
+    available, but deprecated, and will be removed in an upcoming version.
 
     * Same applies to ``haystack_resource_factory`` and
       ``searchable_resource_factory``, respectively.
